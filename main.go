@@ -118,11 +118,11 @@ type Student struct {
 }
 
 func (s *Student) SqlInsert() string {
-	return fmt.Sprintf("INSERT INTO `students` (`id`, `name`) VALUES (%d, %s)", s.Id, s.Name)
+	return fmt.Sprintf("INSERT INTO `students` (`name`) VALUES ('%s')", s.Name)
 }
 
 func (s *Student) SqlUpdate() string {
-	return fmt.Sprintf("UPDATE `students` WHERE id=%d SET name=%s", s.Id, s.Name)
+	return fmt.Sprintf("UPDATE `students` WHERE id=%d SET name='%s'", s.Id, s.Name)
 }
 
 type Session struct {
@@ -131,11 +131,11 @@ type Session struct {
 }
 
 func (s *Session) SqlInsert() string {
-	return fmt.Sprintf("INSERT INTO `sessions` (`id`, `date`) VALUES (%d, %d)", s.Id, s.Date.Unix())
+	return fmt.Sprintf("INSERT INTO `sessions` (`date`) VALUES ('%s')", s.Id, s.Date)
 }
 
 func (s *Session) SqlUpdate() string {
-	return fmt.Sprintf("UPDATE `sessions` WHERE id=%d SET date=%d", s.Id, s.Date.Unix())
+	return fmt.Sprintf("UPDATE `sessions` WHERE id=%d SET date='%s'", s.Id, s.Date)
 }
 
 type Teacher struct {
@@ -144,11 +144,11 @@ type Teacher struct {
 }
 
 func (s *Teacher) SqlInsert() string {
-	return fmt.Sprintf("INSERT INTO `teachers` (`id`, `name`) VALUES (%d, %s)", s.Id, s.Name)
+	return fmt.Sprintf("INSERT INTO `teachers` (`name`) VALUES ('%s')", s.Name)
 }
 
 func (s *Teacher) SqlUpdate() string {
-	return fmt.Sprintf("UPDATE `teachers` WHERE id=%d SET name=%s", s.Id, s.Name)
+	return fmt.Sprintf("UPDATE `teachers` WHERE id=%d SET name='%s'", s.Name)
 }
 
 type Class struct {
@@ -162,11 +162,11 @@ func (s *Class) studentsCommaSep() string {
 	return strings.Join(s.Students, ",")
 }
 func (s *Class) SqlInsert() string {
-	return fmt.Sprintf("INSERT INTO `classes` (`id`, `name`, `students`. `teacher`) VALUES (%d, %s, %s, %d)", s.Id, s.Name, s.studentsCommaSep(), s.Teacher)
+	return fmt.Sprintf("INSERT INTO `classes` (`id`, `name`, `students`. `teacher`) VALUES ('%s', '%s', %d)", s.Name, s.studentsCommaSep(), s.Teacher)
 }
 
 func (s *Class) SqlUpdate() string {
-	return fmt.Sprintf("UPDATE `classes` WHERE id=%d SET name=%s, students=%s, teachers=%d", s.Id, s.Name, s.studentsCommaSep(), s.Teacher)
+	return fmt.Sprintf("UPDATE `classes` WHERE id=%d SET name='%s', students='%s', teachers='%d'", s.Id, s.Name, s.studentsCommaSep(), s.Teacher)
 }
 
 func (c *Class) AddStudent(studentId string) {
