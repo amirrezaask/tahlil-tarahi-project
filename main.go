@@ -10,10 +10,32 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB = nil
 
+func migrate() error {
+	db, err := connectDb()
+	if err != nil {
+		return err
+	}
+	tables := []string{
+		"create table teachers ( id integer primary key, name varchar(200))",
+		"create table students ( id integer primary key, name varchar(200));",
+		"create table sessions ( id integer primary key, date timestamp);",
+		"create table classes ( id integer primary key, name varchar(200), students varchar(600), teacher int);",
+	}
+	for _, t := range tables {
+		fmt.Println("creating tbale ", t)
+		_, err = db.Exec(t)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func connectDb() (*sql.DB, error) {
 	if err := db.Ping; err == nil {
 		return db, nil
@@ -38,6 +60,10 @@ func dbExec(stmt string, args ...interface{}) (sql.Result, error) {
 }
 
 func main() {
+	// err := migrate()
+	// if err != nil {
+	// 	panic(err)
+	// }
 	studentHandler := studentHttpHandler()
 	sessionsHandler := sessionHttpHandler()
 	classesHandler := classHttpHandler()
@@ -46,7 +72,7 @@ func main() {
 	http.Handle("/sessions", sessionsHandler)
 	http.Handle("/classes", classesHandler)
 	http.Handle("/teachers", teacherHandler)
-	err := http.ListenAndServe(":8080", nil)
+	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
