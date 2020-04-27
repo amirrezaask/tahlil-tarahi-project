@@ -14,7 +14,27 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db *sql.DB = nil
+func seed() error {
+	db, err := connectDb()
+	if err != nil {
+		return err
+	}
+	seeds := []string {
+		    "INSERT INTO students (name) VALUES ('amirreza')",
+			"INSERT INTO teachers (name) VALUES ('morad')",
+			"INSERT INTO classes (name, students, teacher) VALUES ('tejarat', 'amirreza,mehran,morad,safa', 'hemmatyar')",
+			"INSERT INTO sessions (date) VALUES (CURRENT_TIMESTAMP)",
+		}
+	for _, t := range seeds {
+		fmt.Println("Running seed ", t)
+		_, err = db.Exec(t)
+		if err != nil {
+			return err
+		}
+	}
+	
+	return nil
+}
 
 func migrate() error {
 	db, err := connectDb()
@@ -25,7 +45,7 @@ func migrate() error {
 		"create table teachers ( id integer primary key, name varchar(200))",
 		"create table students ( id integer primary key, name varchar(200));",
 		"create table sessions ( id integer primary key, date timestamp);",
-		"create table classes ( id integer primary key, name varchar(200), students varchar(600), teacher int);",
+		"create table classes ( id integer primary key, name varchar(200), students varchar(600), teacher varchar(200));",
 	}
 	for _, t := range tables {
 		fmt.Println("creating tbale ", t)
@@ -36,18 +56,18 @@ func migrate() error {
 	}
 	return nil
 }
+var db *sql.DB = nil
 func connectDb() (*sql.DB, error) {
-	if err := db.Ping; err == nil {
-		return db, nil
-	}
-	db, err := sql.Open("sqlite3", "db.sqlite3")
+	_db, err := sql.Open("sqlite3", "db.sqlite3")
 	if err != nil {
 		return nil, err
 	}
-	err = db.Ping()
+	err = _db.Ping()
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("Pinging Succeded")
+	db = _db
 	return db, nil
 }
 
@@ -59,11 +79,21 @@ func dbExec(stmt string, args ...interface{}) (sql.Result, error) {
 	return db.Exec(stmt, args...)
 }
 
+
+func initDB() error {
+	err := migrate()
+	if err != nil {
+		panic(err)
+	}
+	err = seed()
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
+
 func main() {
-	// err := migrate()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	// err := initDB()
 	studentHandler := studentHttpHandler()
 	sessionsHandler := sessionHttpHandler()
 	classesHandler := classHttpHandler()
@@ -72,6 +102,10 @@ func main() {
 	http.Handle("/sessions", sessionsHandler)
 	http.Handle("/classes", classesHandler)
 	http.Handle("/teachers", teacherHandler)
+	_, err := connectDb()
+	if err != nil {
+		panic(err)
+	}
 	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -121,7 +155,7 @@ type Class struct {
 	Id       int
 	Name     string
 	Students []string
-	Teacher  int
+	Teacher  string
 }
 
 func (s *Class) studentsCommaSep() string {
@@ -221,7 +255,7 @@ func sessionHttpHandler() http.Handler {
 				session := &Session{}
 
 				for rows.Next() {
-					err = rows.Scan(&session.Id, session.Date)
+					err = rows.Scan(&session.Id, &session.Date)
 					if err != nil {
 						w.WriteHeader(500)
 						fmt.Fprint(w, err.Error())
@@ -249,7 +283,7 @@ func sessionHttpHandler() http.Handler {
 
 			for rows.Next() {
 				session := &Session{}
-				err = rows.Scan(&session.Id, session.Date)
+				err = rows.Scan(&session.Id, &session.Date)
 				if err != nil {
 					w.WriteHeader(500)
 					fmt.Fprint(w, err.Error())
@@ -349,7 +383,7 @@ func studentHttpHandler() http.Handler {
 				student := &Student{}
 
 				for rows.Next() {
-					err = rows.Scan(&student.Id, student.Name)
+					err = rows.Scan(&student.Id, &student.Name)
 					if err != nil {
 						w.WriteHeader(500)
 						fmt.Fprint(w, err.Error())
@@ -377,7 +411,7 @@ func studentHttpHandler() http.Handler {
 
 			for rows.Next() {
 				student := &Student{}
-				err = rows.Scan(&student.Id, student.Name)
+				err = rows.Scan(&student.Id, &student.Name)
 				if err != nil {
 					w.WriteHeader(500)
 					fmt.Fprint(w, err.Error())
@@ -478,7 +512,7 @@ func classHttpHandler() http.Handler {
 
 				for rows.Next() {
 					students := ""
-					err = rows.Scan(&class.Id, &class.Name, &students, class.Teacher)
+					err = rows.Scan(&class.Id, &class.Name, &students, &class.Teacher)
 					class.Students = strings.Split(students, ",")
 					if err != nil {
 						w.WriteHeader(500)
@@ -508,7 +542,7 @@ func classHttpHandler() http.Handler {
 			for rows.Next() {
 				class := &Class{}
 				students := ""
-				err = rows.Scan(&class.Id, &class.Name, &students, class.Teacher)
+				err = rows.Scan(&class.Id, &class.Name, &students, &class.Teacher)
 				class.Students = strings.Split(students, ",")
 				if err != nil {
 					w.WriteHeader(500)
@@ -609,7 +643,7 @@ func teacherHttpHandler() http.Handler {
 				teacher := &Teacher{}
 
 				for rows.Next() {
-					err = rows.Scan(&teacher.Id, teacher.Name)
+					err = rows.Scan(&teacher.Id, &teacher.Name)
 					if err != nil {
 						w.WriteHeader(500)
 						fmt.Fprint(w, err.Error())
@@ -637,7 +671,7 @@ func teacherHttpHandler() http.Handler {
 
 			for rows.Next() {
 				teacher := &Teacher{}
-				err = rows.Scan(&teacher.Id, teacher.Name)
+				err = rows.Scan(&teacher.Id, &teacher.Name)
 				if err != nil {
 					w.WriteHeader(500)
 					fmt.Fprint(w, err.Error())
